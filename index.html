@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="description" content="Generate a password grid using a numbers, letters, or special characters" />
+	<title>Password Grid Generator</title>
+	<style>
+	body {
+		font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+		margin-left: 5%;
+		margin-right: 5%;
+		width:90%;
+	}
+	h1{
+		margin-top: 1%;
+	}
+	table{
+		width: 19em;
+		font-size: 1.2em;
+		font-family: courier; 
+		margin: .5em; 
+	}
+	tr:last-child, tr:first-child, td:last-child, td:first-child{
+		font-weight: bold;
+	}
+	td:nth-child(even){
+		color: #606060;
+	}
+	label{
+		font-weignt: bold;
+	}
+	input{
+		margin-bottom: 1em;
+		border: thin solid black;
+		padding: .5em;
+	}
+	
+	input[type="submit"]{
+		cursor: pointer;
+	}
+	
+	@media (max-width: 500px){
+		table{
+			font-size: .75em;
+			font-size: 3.75vw;
+			margin: .1em;
+			margin: 1vw;
+		}
+		body{
+			width:98%;
+			margin-right: 1%;
+			margin-left: 1%;
+		}
+	}
+	
+	@media print{
+		#Description, #Options{
+			display: none;
+		}
+		footer{
+			position: fixed;
+			bottom: 0;
+			right: 0;
+		}
+	}
+	</style>
+</head>
+<body>
+	<script>
+		//
+		// I challenged myself to write this in javaScript with no frameworks... it was an interesting endeavour :D
+		// Some things feel pretty silly, like grabbing radio values without :checked
+		//
+		
+		var specials = ['.', '-', '_', '!', '+', '*', '^', '#', '$', '%', '~', '>', '<' ];
+		var normals = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+		
+		function generateRandomNumber (seed){
+			var num = Math.abs(Math.floor(Math.sin(seed) * 10000000))
+			return num;
+		}
+		
+		function isChecked(prev, current, index){
+			if(prev !== null){
+				return prev
+			} 
+			if(current.checked){
+				return current.value == 'true'
+			}
+			return null;
+		}
+		
+		function toArray(arrayLikeThing){
+			var myArray = []
+			for(var n in arrayLikeThing){
+				myArray.push(arrayLikeThing[n])
+			}
+			return myArray
+		}
+		
+		function drawGrid(charArray){
+			var grid = document.getElementById("Grid")
+			var header = document.getElementById("GridHeader").cloneNode(true)
+			
+			while(grid.firstChild){
+				grid.removeChild(grid.firstChild)
+			}
+			
+			grid.appendChild(header)
+			
+			var rowCount = 0;
+			var row = null
+			for(var index in charArray){
+				var character = charArray[index]
+				if(index % 26 == 0){
+					row = document.createElement('tr')
+					var cell = document.createElement('td')
+					cell.innerText = rowCount
+					row.appendChild(cell)
+				}
+				var cell = document.createElement('td')
+				cell.innerText = character
+				row.appendChild(cell)
+				
+				if(index % 26 == 25){
+					var cell = document.createElement('td')
+					cell.innerText = rowCount++
+					row.appendChild(cell)
+					grid.appendChild(row)
+				}
+			}
+			
+			grid.appendChild(header.cloneNode(true))	
+		}
+		
+		function generateGrid(e){
+			try{
+				var passCode = document.getElementById('passCode').value
+				if(!passCode){
+					passCode = Math.floor(Math.random() * 1000000)
+				}
+				else{
+					// half-assed attempt to clean up the string
+					passCode = encodeURI(passCode)
+					passCode = passCode.replace(/[^\d|\w]+/g, '')
+					passCode = passCode.replace(/00/g, '0')
+					passCode = parseInt(passCode, 36)
+					// sin doesn't do well with giant numbers, so we'll mod it down a bit (this reduces randomness a bit as we're now only using part of the seed)
+					passCode = passCode % 1000000000;
+				}
+				
+				var includeSpecial = toArray(document.getElementsByName('includeSpecial')).reduce(isChecked, null)
+				var includeNumbers = toArray(document.getElementsByName('includeNumbers')).reduce(isChecked, null)
+				
+				var charArray = []
+				for(var numChars = 260; numChars > 0; numChars--){
+					if(includeSpecial && (generateRandomNumber(passCode++) % 100 < 20)){
+						var index = generateRandomNumber(passCode++) % specials.length
+						charArray.push(specials[index])
+					}
+					else if(includeNumbers && (generateRandomNumber(passCode++) % 100 < 40)){
+						charArray.push(generateRandomNumber(passCode++) % 10)
+					}
+					else{
+						var index = generateRandomNumber(passCode++) % normals.length
+						var character = normals[index]
+						if(generateRandomNumber(passCode++) % 10 < 5){
+							character = character.toUpperCase()
+						}
+						charArray.push(character)
+					}
+				}
+				
+				drawGrid(charArray)		
+			}
+			catch(err){
+				console.error(err)
+				return false
+			}
+			return false;
+		}
+	</script>
+
+	<div>
+		<h1>Your Randomly Generated Password Grid</h1>
+		<table id="Grid">
+			<tr id="GridHeader"><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td><td>J</td><td>K</td><td>L</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td><td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td></tr>
+		</table>
+		<div id="Options">
+			<p>Refresh to get a new random grid or:</p>
+			<form onSubmit="return generateGrid(event)">
+				<label for="passCode">Enter a phrase to seed the grid (optional, leave empty for a random seed):</label><br />
+				<input type="input" value="" id="passCode" name="passCode" maxlength="30"/><br />
+				<label for="includeSpecial">Do you want to mix in some symbols?</label><br />
+				Ya: <input type="radio" name="includeSpecial" value="true" /> No: <input type="radio" name="includeSpecial" value="false" checked /><br />
+				<label for="includeSpecial">Do you want to mix in some numbers?</label><br />
+				Ya: <input type="radio" name="includeNumbers" value="true" checked /> No: <input type="radio" name="includeNumbers" value="false" /><br />
+				<input type="submit" value="Generate Using These Options" />
+			</form>
+			<script>generateGrid()</script>
+		</div>
+	</div>
+	<div id="Description">
+		<hr />
+		<h3>What? How does it work?</h3>
+		<p>There are lots of different ways to use a password grid. The most common is to pick a pattern in a small grid and walk it for a total of 8-16 characters. People often create a new grid for every meaningful password (ie, one grid for your bank, one for your online stock account, one for your production web server account, etc).</p>
+		<p>
+			That might be a little overkill for most people, especially for 16 character passwords -- that's a lot of typing and grid reference! -- So lets see if we can find an easier method that will still give us a measure of safety from dictionary attacks. You'll notice that this grid has letters and numbers on the axis, the alphabet along the top, 0-9 on the left, we
+			re going to use that to make a simple, difficult to crack password scheme:
+			<ol>
+				<li>Print a few copies of your grid. This is important even if you generated w/ a phrase. You might lose it and the site might not be around anymore to re-generate your grid.
+				<li>Choose a length for your passwords, 8 is normally good enough for most needs (62^8 is a big number (218,340,105,584,896 in case you were curious))</li>
+				<li>Choose a way to find the start point for your password.</li>
+				<li>Choose a simple pattern to follow to get your 8 characters. It doesn't really matter what it is, someone will have to have your card AND the pattern AND the starting point to determine your password, so keep it simple</li>
+				<li>Combine the steps into a password</li>
+			</ol>
+		</p>
+		<p>
+			That's the general case -- does it make sense? Let's try with a real world example for facebook.com:
+			<ol>
+				<li>Lets go with 8 characters for our password, if you want more you'll just have to accept that it'll take a while to memorize and type (we are talking about random letters here)</li>
+				<li>Facebook starts with the letter F and has 8 characters, so we're going to use (F, 8) as the start of our pattern, nice and simple</li>
+				<li>To keep the pattern simple, lets go with 4 characters to the right and 4 characters down
+				<li>
+					Put the pattern into action:
+					<ol>
+						<li>Go to F,8 in the random sample above.</li>
+						<li>Grab that character and the 4 to the right of it {(F,8), (G,8), (H,8), (I,8)}</li>
+						<li>Now grab the four characters below that {(I,9), (I,0), (I,1), (I,2)}</li>
+					</ol>
+				</li>
+			</ol>
+		</p>
+		<p>Simple and repeatable. Print out a new card every 3-6 months and swap all your passwords.</p>
+		<p>Just tape the grid to your computer and keep a copy in your wallet. Even if someone has access to the card, they don't know the patterns that you use, so there's not much that they can do with it.</p>
+		<h3>Password Grid FAQ</h3>
+		<p>
+			Why?
+			<blockquote><a href="http://www.whatsmypass.com/the-top-500-worst-passwords-of-all-time" target="_blank">Because</a> <a href="http://www.tomshardware.com/news/imperva-rockyou-most-common-passwords,9486.html" target="_blank">you</a> <a href="http://blog.jimmyr.com/Password_analysis_of_databases_that_were_hacked_28_2009.php" target="_blank">can't</a> <a href="http://www.pcmag.com/article2/0,2817,2113976,00.asp" target="_blank">make</a> <a href="http://wpengine.com/unmasked/" target="_blank">a good</a> <a href="http://www.usewisdom.com/computer/passwords.html" target="_blank">password</a>.</blockquote>
+		</p>
+		<p>
+			This is hard, can I use a shorter password?
+			<blockquote>Yes, but see the above question. You may place a passphrase inside of your generated password (passwords inside of passwords!). You'll be making yourself slightly more vulnerable, but with the extra characters you can now make the generated part of your password shorter. In the example above you could use "mYpAsSw0rD" and then toss 4 of the random characters on the end or beginning or in the middle. Honestly you should do this anyway; the more characters the better. Consider a phrase like, oh, I don't know... maybe <a href="https://xkcd.com/936/" target="_blank">"CorrectHorseBatteryStaple"</a></blockquote>
+		</p>
+		<p>
+			Fidelity and Facebook are the same number of characters and both start with F, handle THAT!
+			<blockquote>What, do I need to solve all of your problems for you? Print two copies and mark one "Banks and important crap" and mark the other one "Everything else". Or place a different passphrase within the generated passphrase, like "Bank" for banks.</blockquote>
+		</p>
+		<p>
+			http://www.thedailyworsethanfailure.com/ is 24 characters, that is more than 9. What do I do?
+			<blockquote>You see 24, I see 4. Wrap it around (software people call it the <a href="http://en.wikipedia.org/wiki/Modulo_operation" target="_blank">Modulus</a> operation).</blockquote>
+		</p>
+		<p>
+			Wait wait wait, print a new one every 3-6 months?
+			<blockquote>Yes. If you're springing forward or backwards, change your passwords (yeah, I just thought that up... no I know it doesn't quite work, but whatever).</blockquote>
+		</p>
+		<p>
+			How random is this?
+			<blockquote>Fairly. Take a look at the source if you're curious. It uses JavaScript, so it is all there. It doesn't use a cryptographic random number generator or anything fancy, but if you just want to add some entropy to a passphrase that makes it different for every site, then this will suffice.</blockquote>
+		</p>
+		<p>
+			What do you do with this data?
+			<blockquote>There are no tracking scripts on this page and the grid is generated on the client via JavaScript. If your computer is not compromised, then this data goes nowhere.</blockquote>
+		</p>
+		<hr />
+	</div>
+	
+	<footer>
+		<p>&copy; 2019 1337pages.com</p>
+	</footer>
+</body>
+</html>
